@@ -1,90 +1,107 @@
 import telebot
 import requests
-import unicodedata
-from bs4 import BeautifulSoup
+import re
 from datetime import datetime
-from time import sleep
 
-token ="5876070267:AAGrxdWNq5IN7oKy1M7oBfo8jdzZYcBCDb4"
-bot = telebot.TeleBot(token)
-# @BRoK8 @Crrazy_8
+bot = telebot.TeleBot('6044876527:AAH9DdgcP9xhAK2HcWu9HGgw_Dx4qjF4P7E')
 
 @bot.message_handler(commands=['start'])
-def Welcome(message):
-    
-    bot.reply_to(message,"Welcome to the TikTok account information bot",reply_markup=telebot.types.InlineKeyboardMarkup([
-                     [telebot.types.InlineKeyboardButton(text='Dev',url='@SourceAzoth')]]))
+def send_welcome(message):
+    bot.reply_to(message, 'مرحبا، يمكنك إرسال اسم المستخدم الخاص بحساب تيك توك للحصول على معلومات عن الحساب')
 
-@bot.message_handler(content_types=["text"])
-def info(message):
-    username = message.text.strip()
-    if username.startswith('@'):
-        username = username[1:]
-    
-    data = get_tiktok_user_info(username)
-    if data:
-        id = data['user_id']
-        name = data['name']
-        followers = data['followers']
-        following = data['following']
-        time = data['user_create_time']
-        last = data['last_change_name']
-        acc = data['account_region']
-        
-        country_emoji = unicodedata.lookup(f"REGIONAL INDICATOR SYMBOL LETTER {acc[0]}")
-        country_emoji += unicodedata.lookup(f"REGIONAL INDICATOR SYMBOL LETTER {acc[1]}")
-        
-        
-        keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
-        keyboard.add(
-        telebot.types.InlineKeyboardButton(f'- name ({name})â¢', callback_data='1'),
-        telebot.types.InlineKeyboardButton(f'- followers ({followers})â¢', callback_data='2'),
-        telebot.types.InlineKeyboardButton(f'- following ({following})â¢',callback_data='3'),
-        telebot.types.InlineKeyboardButton(f'- Last name change ({last})â¢',callback_data='4'),
-        telebot.types.InlineKeyboardButton(f'- id ({id})â¢',callback_data="5"),
-        telebot.types.InlineKeyboardButton(f'- date ({time})â¢',callback_data="6"),
-        telebot.types.InlineKeyboardButton(f'- country ({country_emoji} - {acc})â¢',callback_data="7")
-        )
-        b = bot.reply_to(message,'wait ...')
-        bot.delete_message(chat_id=message.chat.id, message_id=b.message_id)
-        bot.reply_to(message,'''- Done sir .
-- By : @BRoK8 ($) Ch : @Crrazy_8 .''',reply_markup=keyboard)
-    else:
-        bot.reply_to(message,"-There are problems with the search.")
-
-def get_tiktok_user_info(username):
-    headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"}
-    r = requests.get(f"https://www.tiktok.com/@{username}", headers=headers)
-    server_log = str(r.text)
-
+@bot.message_handler(func=lambda message: True)
+def get_info(message):
     try:
-        soup = BeautifulSoup(server_log, 'html.parser')
-        script = soup.find(id='SIGI_STATE').contents
-        data = str(script).split('},"UserModule":{"users":{')[1]
-        
-        user_info = {}
-        user_info['user_id'] = data.split('"id":"')[1].split('",')[0]
-        user_info['name'] = data.split(',"nickname":"')[1].split('",')[0]
-        user_info['followers'] = data.split('"followerCount":')[1].split(',')[0]
-        user_info['following'] = data.split('"followingCount":')[1].split(',')[0]
-        user_info['user_create_time'] = user_create_time(int(user_info['user_id']))
-        user_info['last_change_name'] = datetime.fromtimestamp(int(data.split('"nickNameModifyTime":')[1].split(',')[0]))
-        user_info['account_region'] = data.split('"region":"')[1].split('"')[0]
-        
-        return user_info
-    except IndexError:
-        return None
+        response = requests.get(f'https://www.tiktok.com/@{message.text}')
+        patrek = response.text
 
-def user_create_time(url_id):
-    binary = "{0:b}".format(url_id)
-    i = 0
-    bits = ""
-    while i < 31:
-        bits += binary[i]
-        i += 1
-    timestamp = int(bits, 2)
-    dt_object = datetime.fromtimestamp(timestamp)
-    return dt_object
-# @BRoK8 @Crrazy_8
+        getting = str(patrek.split('"UserModule":')[1]).split('"RecommendUserList"')[0]
+        
+        try:
+            id = str(getting.split('id":"')[1]).split('",')[0]
+        except:
+            id = ""
+        
+        try:
+            name = str(getting.split('nickname":"')[1]).split('",')[0]
+        except:
+            name = ""
+        
+        try:
+            bio = str(getting.split('signature":"')[1]).split('",')[0]
+        except:
+            bio = ""
+        
+        try:
+            country = str(getting.split('region":"')[1]).split('",')[0]
+        except:
+            country = ""
+        
+        try:
+            private = str(getting.split('privateAccount":')[1]).split(',"')[0]
+        except:
+            private = ""
+        
+        try:
+            verified = str(getting.split('"verified":')[1]).split(',')[0]
+        except:
+            verified = ""
+        
+        try:
+            secuid = re.search(r'"secUid":"(.+?)"', patrek).group(1)
+        except:
+            secuid = ""
+            
+        try:
+            user_created_time = re.search(r'"createTime":"(.+?)"', patrek).group(1)
+            user_created_time = datetime.fromtimestamp(int(user_created_time)).strftime('%Y-%m-%d %H:%M:%S')
+        except:
+            user_created_time = ""
+            
+        try:
+            account_region = re.search(r'"accountRegion":"(.+?)"', patrek).group(1)
+        except:
+            account_region = ""
+        
+        try:
+            followers = str(getting.split('followerCount":')[1]).split(',"')[0]
+        except:
+            followers = ""
+        
+        try:
+            following = str(getting.split('followingCount":')[1]).split(',"')[0]
+        except:
+            following = ""
+        
+        try:
+            like = str(getting.split('heart":')[1]).split(',"')[0]
+        except:
+            like = ""
+        
+        try:
+            video = str(getting.split('videoCount":')[1]).split(',"')[0]
+        except:
+            video = ""
+        
+        kls = f"""───────────────
+ᴜѕᴇʀɴᴀᴍᴇ ➢ {message.text}
+ɴᴀᴍᴇ ➢ {name}
+ғᴏʟʟᴏᴡᴇʀѕ ➢ {followers}
+ғᴏʟʟᴏᴡɪɴɢ ➢ {following}
+ʟɪᴋᴇ ➢ {like}
+ᴠɪᴅᴇᴏ ➢ {video}
+ᴘʀɪᴠᴀᴛᴇ ➢ {private}
+ᴠᴇʀɪғɪᴇᴅ ➢ {verified}
+sᴇᴄᴜɪᴅ ➢ {secuid}
+ᴜsᴇʀ ᴄʀᴇᴀᴛᴇᴅ ᴛɪᴍᴇ ➢ {user_created_time}
+ᴀᴄᴄᴏᴜɴᴛ ʀᴇɢɪᴏɴ➢ {account_region}
+ʙɪᴏɢʀᴀᴘʜʏ ➢ {bio}
+ᴄᴏᴜɴᴛʀʏ ➢ {country}
+───────────────"""
+        
+        bot.reply_to(message, kls)
+    
+    except:
+        bot.reply_to(message, 'حدث خطأ في الحصول على المعلومات. تأكد من صحة اسم المستخدم وحاول مرة أخرى')
 
-bot.infinity_polling()
+bot.polling()
