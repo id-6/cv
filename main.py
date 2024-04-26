@@ -1,32 +1,25 @@
-from telebot import *
-from time import sleep
-import requests
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, CallbackContext
 
-bot = TeleBot("6044876527:AAH9DdgcP9xhAK2HcWu9HGgw_Dx4qjF4P7E")
-userBot = ("tt0_6bot")
-# -- user bot dont [@] --
-ad = (f'https://t.me/{userBot}?startgroup=Commands&admin=ban_users+restrict_members+delete_messages+add_admins+change_info+invite_users+pin_messages+manage_call+manage_chat+manage_video_chats+promote_members')
-@bot.message_handler(commands=['start'])
-def start(message):
-	key = types.InlineKeyboardMarkup()
-	str = types.InlineKeyboardButton('اضفني لـ مجموعتك 🧚🏼‍♂️' ,url =f'{ad}')	
-	key.add(str)
-	bot.reply_to(message,f'''*اهلين انا بوت سورس ازوث 
+def start(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text('Hi! Send me a story link to download it.')
 
-↞اختصاصي زخرفه اسم بلغه ‹ en ; ar › .
-↞ فريند البـوت تيست ...
- *''',parse_mode="Markdown",reply_markup=key)
-@bot.message_handler(func=lambda m : True )
-def main(message):
-  	ivo = message.text
-  	url = f'https://dedo.cf/api-zkrfa.php?text={ivo}'
-  	ivos = requests.get(url).json()
-  	p = ivos['results']
-  	bot.reply_to(message,f'''↞ انتظرنـي *
- *''',parse_mode="Markdown")
-  	time.sleep(2)
-  	bot.send_message(message.chat.id,f'''*↞ تـم الانتهاء 🧚🏼🔃 ...
-• الـيـك الـزخارف  : 
-↞ الاسـم : {ivo}  .
-↞الـزخرفة : {p} .*''',parse_mode="Markdown",reply_to_message_id=message.message_id)
-bot.polling()
+def download_story(update: Update, context: CallbackContext) -> None:
+    story_link = update.message.text
+    # Add code here to download the story from the link
+    update.message.reply_text(f'Downloading story from {story_link}...')
+
+def main() -> None:
+    updater = Updater("6044876527:AAH9DdgcP9xhAK2HcWu9HGgw_Dx4qjF4P7E", use_context=True)
+
+    dispatcher = updater.dispatcher
+
+    dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(CommandHandler("download", download_story))
+
+    updater.start_polling()
+
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
